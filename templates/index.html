@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Filtrado Excel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        #results-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .table th {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <h1 class="text-center mb-4">Sistema de Filtrado de Archivos Excel</h1>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Cargar Archivo Excel</h5>
+            </div>
+            <div class="card-body">
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="excel-file" class="form-label">Seleccione un archivo Excel</label>
+                        <input type="file" class="form-control" id="excel-file" name="file" accept=".xlsx,.xls">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Cargar Archivo
+                    </button>
+                </form>
+                <div id="upload-loading" class="loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p>Procesando archivo...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="filter-section" class="card mb-4" style="display: none;">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Filtrar Datos</h5>
+            </div>
+            <div class="card-body">
+                <form id="filter-form">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="mru-column" class="form-label">Columna MRU (C)</label>
+                            <select class="form-select" id="mru-column">
+                                <option value="">Seleccione una columna...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="mru-value" class="form-label">Valor de MRU</label>
+                            <input type="text" class="form-control" id="mru-value" list="mru-values">
+                            <datalist id="mru-values"></datalist>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="canton-column" class="form-label">Columna Cantón (F)</label>
+                            <select class="form-select" id="canton-column">
+                                <option value="">Seleccione una columna...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="canton-value" class="form-label">Valor de Cantón</label>
+                            <input type="text" class="form-control" id="canton-value" list="canton-values">
+                            <datalist id="canton-values"></datalist>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">Columnas a mostrar en resultados</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <label for="cuen-column" class="form-label">Columna Cuen (I)</label>
+                                        <select class="form-select output-column" id="cuen-column" data-field="Cuen">
+                                            <option value="">Seleccione una columna...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="direccion-column" class="form-label">Columna Dirección (J)</label>
+                                        <select class="form-select output-column" id="direccion-column" data-field="Direccion">
+                                            <option value="">Seleccione una columna...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="nombre-column" class="form-label">Columna Nombre Cliente (R)</label>
+                                        <select class="form-select output-column" id="nombre-column" data-field="Nombre_Cliente">
+                                            <option value="">Seleccione una columna...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <label for="identificacion-column" class="form-label">Columna Identificación (S)</label>
+                                        <select class="form-select output-column" id="identificacion-column" data-field="Identificacion">
+                                            <option value="">Seleccione una columna...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="servicio-column" class="form-label">Columna Número Servicio (T)</label>
+                                        <select class="form-select output-column" id="servicio-column" data-field="Numero_Servicio">
+                                            <option value="">Seleccione una columna...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="facturas-column" class="form-label">Columna Facturas Pendientes (U)</label>
+                                        <select class="form-select output-column" id="facturas-column" data-field="Facturas_Pendientes">
+                                            <option value="">Seleccione una columna...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label for="valor-column" class="form-label">Columna Valor Vencido (W)</label>
+                                        <select class="form-select output-column" id="valor-column" data-field="Valor_Vencido">
+                                            <option value="">Seleccione una columna...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-search"></i> Filtrar Datos
+                    </button>
+                </form>
+                <div id="filter-loading" class="loading">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Filtrando...</span>
+                    </div>
+                    <p>Filtrando datos...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="results-section" class="card" style="display: none;">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Resultados</h5>
+                <span id="result-count" class="badge bg-light text-dark"></span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3 d-flex justify-content-between align-items-center">
+                    <button id="export-excel" class="btn btn-primary">
+                        <i class="bi bi-file-earmark-excel"></i> Exportar a Excel
+                    </button>
+                    <div id="total-valor" class="alert alert-info mb-0" style="display: none;">
+                        <strong>Total Valor Vencido:</strong> <span id="total-valor-value"></span>
+                    </div>
+                </div>
+                <div id="results-container" class="table-responsive">
+                    <table id="results-table" class="table table-striped table-hover">
+                        <thead>
+                            <tr id="table-header"></tr>
+                        </thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadForm = document.getElementById('upload-form');
+            const filterForm = document.getElementById('filter-form');
+            const uploadLoading = document.getElementById('upload-loading');
+            const filterLoading = document.getElementById('filter-loading');
+            const filterSection = document.getElementById('filter-section');
+            const resultsSection = document.getElementById('results-section');
+            const mruColumn = document.getElementById('mru-column');
+            const cantonColumn = document.getElementById('canton-column');
+            const mruValue = document.getElementById('mru-value');
+            const cantonValue = document.getElementById('canton-value');
+            const mruValues = document.getElementById('mru-values');
+            const cantonValues = document.getElementById('canton-values');
+            const tableHeader = document.getElementById('table-header');
+            const tableBody = document.getElementById('table-body');
+            const resultCount = document.getElementById('result-count');
+            const exportExcel = document.getElementById('export-excel');
+            
+            // Todos los selectores de columnas de salida
+            const outputColumns = document.querySelectorAll('.output-column');
+            
+            // Manejar carga de archivo
+            uploadForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const fileInput = document.getElementById('excel-file');
+                if (!fileInput.files.length) {
+                    alert('Por favor seleccione un archivo');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                
+                uploadLoading.style.display = 'block';
+                
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    uploadLoading.style.display = 'none';
+                    
+                    if (data.success) {
+                        populateColumnDropdowns(data.columns);
+                        
+                        // Si hay un mapeo de columnas automático, establecerlo
+                        if (data.column_mapping) {
+                            setAutomaticColumnMapping(data.column_mapping);
+                        }
+                        
+                        filterSection.style.display = 'block';
+                    } else {
+                        alert(data.error || 'Error al cargar el archivo');
+                    }
+                })
+                .catch(error => {
+                    uploadLoading.style.display = 'none';
+                    alert('Error: ' + error.message);
+                });
+            });
+            
+            // Manejar selección de columnas para obtener valores únicos
+            mruColumn.addEventListener('change', function() {
+                if (this.value) {
+                    fetchUniqueValues(this.value, mruValues);
+                }
+            });
+            
+            cantonColumn.addEventListener('change', function() {
+                if (this.value) {
+                    fetchUniqueValues(this.value, cantonValues);
+                }
+            });
+            
+            // Manejar filtro de datos
+            filterForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (!mruColumn.value || !cantonColumn.value) {
+                    alert('Por favor seleccione las columnas de MRU y Cantón');
+                    return;
+                }
+                
+                // Obtener las columnas de salida seleccionadas
+                const outputColumnsObj = {};
+                outputColumns.forEach(select => {
+                    if (select.value) {
+                        outputColumnsObj[select.dataset.field] = select.value;
+                    }
+                });
+                
+                const filterData = {
+                    mru_column: mruColumn.value,
+                    canton_column: cantonColumn.value,
+                    mru_value: mruValue.value,
+                    canton_value: cantonValue.value,
+                    output_columns: outputColumnsObj
+                };
+                
+                filterLoading.style.display = 'block';
+                
+                fetch('/filter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(filterData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    filterLoading.style.display = 'none';
+                    
+                    if (data.success) {
+                        displayResults(data);
+                    } else {
+                        alert(data.error || 'Error al filtrar datos');
+                    }
+                })
+                .catch(error => {
+                    filterLoading.style.display = 'none';
+                    alert('Error: ' + error.message);
+                });
+            });
+            
+            // Exportar a Excel
+            exportExcel.addEventListener('click', function() {
+                const table = document.getElementById('results-table');
+                if (!table) return;
+                
+                // Crear un libro de Excel desde la tabla HTML
+                let csv = [];
+                const rows = table.querySelectorAll('tr');
+                
+                for (let i = 0; i < rows.length; i++) {
+                    const row = [], cols = rows[i].querySelectorAll('td, th');
+                    
+                    for (let j = 0; j < cols.length; j++) {
+                        // Escapar comillas dobles en el texto
+                        let text = cols[j].innerText;
+                        text = text.replace(/"/g, '""');
+                        // Añadir valor con comillas dobles para manejar comas dentro del texto
+                        row.push('"' + text + '"');
+                    }
+                    csv.push(row.join(','));
+                }
+                
+                // Descargar CSV
+                const csvFile = new Blob([csv.join('\n')], {type: 'text/csv'});
+                const downloadLink = document.createElement('a');
+                downloadLink.download = 'resultados_filtrados.csv';
+                downloadLink.href = window.URL.createObjectURL(csvFile);
+                downloadLink.style.display = 'none';
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            });
+            
+            function populateColumnDropdowns(columns) {
+                mruColumn.innerHTML = '<option value="">Seleccione una columna...</option>';
+                cantonColumn.innerHTML = '<option value="">Seleccione una columna...</option>';
+                
+                // Vaciar todos los dropdowns de columnas de salida
+                outputColumns.forEach(select => {
+                    select.innerHTML = '<option value="">Seleccione una columna...</option>';
+                });
+                
+                columns.forEach(column => {
+                    // Para columnas de filtro
+                    const mruOption = document.createElement('option');
+                    mruOption.value = column;
+                    mruOption.textContent = column;
+                    mruColumn.appendChild(mruOption);
+                    
+                    const cantonOption = document.createElement('option');
+                    cantonOption.value = column;
+                    cantonOption.textContent = column;
+                    cantonColumn.appendChild(cantonOption);
+                    
+                    // Para columnas de salida
+                    outputColumns.forEach(select => {
+                        const option = document.createElement('option');
+                        option.value = column;
+                        option.textContent = column;
+                        select.appendChild(option);
+                    });
+                });
+            }
+            
+            function setAutomaticColumnMapping(mapping) {
+                // Establecer columnas de filtro
+                if (mapping.MRU) {
+                    mruColumn.value = mapping.MRU;
+                    fetchUniqueValues(mapping.MRU, mruValues);
+                }
+                if (mapping.Canton) {
+                    cantonColumn.value = mapping.Canton;
+                    fetchUniqueValues(mapping.Canton, cantonValues);
+                }
+                
+                // Establecer columnas de salida
+                outputColumns.forEach(select => {
+                    const field = select.dataset.field;
+                    if (mapping[field]) {
+                        select.value = mapping[field];
+                    }
+                });
+            }
+            
+            function fetchUniqueValues(columnName, datalistElement) {
+                fetch('/get_unique_values', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ column_name: columnName })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        datalistElement.innerHTML = '';
+                        data.values.forEach(value => {
+                            const option = document.createElement('option');
+                            option.value = value;
+                            datalistElement.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al obtener valores únicos:', error);
+                });
+            }
+            
+            function displayResults(data) {
+                resultsSection.style.display = 'block';
+                resultCount.textContent = `${data.total_rows} resultados encontrados`;
+                
+                // Mostrar el total del valor vencido si está disponible
+                const totalValorDiv = document.getElementById('total-valor');
+                const totalValorValue = document.getElementById('total-valor-value');
+                
+                if (data.total_valor_vencido !== null && data.total_valor_vencido !== undefined) {
+                    totalValorDiv.style.display = 'block';
+                    totalValorValue.textContent = data.total_valor_vencido.toLocaleString('es-ES', {
+                        style: 'currency',
+                        currency: 'USD'
+                    });
+                } else {
+                    totalValorDiv.style.display = 'none';
+                }
+                
+                if (data.data.length === 0) {
+                    tableHeader.innerHTML = '<th>Sin resultados</th>';
+                    tableBody.innerHTML = '<tr><td>No se encontraron datos que coincidan con los criterios de filtro</td></tr>';
+                    return;
+                }
+                
+                // Construir encabezado de tabla con etiquetas personalizadas
+                const firstRow = data.data[0];
+                tableHeader.innerHTML = '';
+                Object.keys(firstRow).forEach(key => {
+                    const th = document.createElement('th');
+                    th.textContent = data.column_labels[key] || key;
+                    tableHeader.appendChild(th);
+                });
+                
+                // Construir cuerpo de tabla
+                tableBody.innerHTML = '';
+                data.data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    Object.values(row).forEach(value => {
+                        const td = document.createElement('td');
+                        td.textContent = value !== null ? value : '';
+                        tr.appendChild(td);
+                    });
+                    tableBody.appendChild(tr);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
